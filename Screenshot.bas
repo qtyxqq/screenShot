@@ -1,21 +1,24 @@
 '64bit版
-Private Declare PtrSafe Function OpenClipboard Lib "user32" (Optional ByVal hwnd As Long = 0) As Long
-Private Declare PtrSafe Function CloseClipboard Lib "user32" () As Long
-Private Declare PtrSafe Function EmptyClipboard Lib "user32" () As Long
-Private Declare PtrSafe Sub Sleep Lib "kernel32" (ByVal ms As Long)
+Public Declare PtrSafe Function OpenClipboard Lib "user32" (Optional ByVal hwnd As Long = 0) As Long
+Public Declare PtrSafe Function CloseClipboard Lib "user32" () As Long
+Public Declare PtrSafe Function EmptyClipboard Lib "user32" () As Long
+Public Declare PtrSafe Sub Sleep Lib "kernel32" (ByVal ms As Long)
 '32bit版
-'Private Declare Function OpenClipboard Lib "user32" (Optional ByVal hwnd As Long = 0) As Long
-'Private Declare Function CloseClipboard Lib "user32" () As Long
-'Private Declare Function EmptyClipboard Lib "user32" () As Long
-'Private Declare  Sub Sleep Lib "kernel32" (ByVal ms As Long)
+'Public Declare Function OpenClipboard Lib "user32" (Optional ByVal hwnd As Long = 0) As Long
+'Public Declare Function CloseClipboard Lib "user32" () As Long
+'Public Declare Function EmptyClipboard Lib "user32" () As Long
+'Public Declare  Sub Sleep Lib "kernel32" (ByVal ms As Long)
 
-Const VK_SNAPSHOT = &H2C    ''[PrintScrn]キー
-Const KEYEVENTF_EXTENDEDKEY = &H1    ''キーを押す
-Const KEYEVENTF_KEYUP = &H2          ''キーを放す
+Public Const VK_SNAPSHOT = &H2C    ''[PrintScrn]キー
+Public Const KEYEVENTF_EXTENDEDKEY = &H1    ''キーを押す
+Public Const KEYEVENTF_KEYUP = &H2          ''キーを放す
 
-Const DST_SHT = "Sheet1"
-Const START_ROW = 5
-Const PIC_OFFSET = 3
+Public Const DST_SHT = "Sheet1"
+Public Const START_ROW = 5
+Public Const PIC_OFFSET = 3
+
+Public lastPic As Integer
+
 
 
 Sub AutoCapture()
@@ -45,8 +48,11 @@ Sub AutoCapture()
                     Sleep 500
                     '画像サイズにより位置移動
                     destRow = getLastRow()
-                     ThisWorkbook.Sheets(DST_SHT).Paste Destination:=ThisWorkbook.Sheets(DST_SHT).Range("B" & destRow)
-
+                    '画像最初の場所を見つける
+                    destRowHead = getLastRowHead(destRow)
+                    ThisWorkbook.Sheets(DST_SHT).Paste Destination:=ThisWorkbook.Sheets(DST_SHT).Range("B" & destRow)
+                    ThisWorkbook.Sheets(DST_SHT).Range("A" & destRowHead) = lastPic + 1
+                    'Debug.Print ("destRowHead = " & destRowHead & " lastPic = " & lastPic + 1)
                     'クリップボードを空にする。
                     OpenClipboard
                     EmptyClipboard
@@ -75,6 +81,7 @@ Function getLastRow()
         sharpLastRow = Top + Height
         sharpLastRow = CInt((Top + Height) / .Item(i).TopLeftCell.RowHeight)
         If lastRow <= sharpLastRow Then
+            lastPic = i
             lastRow = sharpLastRow
             hasPicFlag = True
         End If
@@ -85,8 +92,19 @@ Function getLastRow()
     Else
         getLastRow = lastRow
     End If
-    Debug.Print getLastRow
+'    Debug.Print getLastRow
     End With
 End Function
+
+' 最後の画像の頭の行番号を取得
+Function getLastRowHead(destRow)
+    If lastPic <> 0 Then
+        sharpLastRowHead = destRow - 1
+    Else
+        sharpLastRowHead = START_ROW
+    End If
+    getLastRowHead = sharpLastRowHead
+End Function
+
 
 
